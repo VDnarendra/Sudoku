@@ -4,6 +4,11 @@ import numpy as np
 import re
 from random import randint
 
+def MAKEME(lis):
+	s = ''
+	for i in lis:
+		s+=str(i)
+	return s
 
 def getPuzzle(name):
 	PuzzleOBJ = []
@@ -15,9 +20,7 @@ def getPuzzle(name):
 		for c in line:
 			l += [int(c)]
 		PuzzleOBJ += [l]
-	print(PuzzleOBJ)
 	return PuzzleOBJ
-
 
 class GUI(object):
 	"""docstring for GUI"""
@@ -65,9 +68,7 @@ class GUI(object):
 	   
 	def Dispaly(self):
 
-		intro = True
-
-		while intro:
+		while True:
 			for event in self.Pygame.event.get():
 				if event.type == self.Pygame.QUIT:
 					self.Pygame.quit()
@@ -113,22 +114,27 @@ class GUI(object):
 		for i in range(9):
 			for j in range(9):
 				if self.solver.PuzzleOBJ[j][i] == 0:
-					continue
-				val = str(self.solver.PuzzleOBJ[j][i])
-				x = sx + (i*50)
-				y = sy + (j*50)
+					val = MAKEME(self.solver.state_POS[j][i])
+					x = sx + (i*50)
+					y = sy + (j*50)
 
-				smallText = self.Pygame.font.SysFont("comicsansms",50)
-				textSurf, textRect = self.text_objects(val, smallText,'red')
-				textRect.center = ( (x+(w/2)), (y+(h/2)) )
-				self.gameDisplay.blit(textSurf, textRect)
+					smallText = self.Pygame.font.SysFont("comicsansms",20)
+					textSurf, textRect = self.text_objects(val, smallText,'green')
+					textRect.center = ( (x+(w/2)), (y+(h/2)) )
+					self.gameDisplay.blit(textSurf, textRect)
+				else:
+					val = str(self.solver.PuzzleOBJ[j][i])
+					x = sx + (i*50)
+					y = sy + (j*50)
+
+					smallText = self.Pygame.font.SysFont("comicsansms",50)
+					textSurf, textRect = self.text_objects(val, smallText,'red')
+					textRect.center = ( (x+(w/2)), (y+(h/2)) )
+					self.gameDisplay.blit(textSurf, textRect)
 
 	def game_loop(self):
-		while self.solver.Solve():
+		while not self.solver.Solve():
 			self.gameDisplay.fill(self.colors['white'])
-
-
-
 			self.drawBoxs()
 			self.fillValues()
 			self.Pygame.display.update()
@@ -144,6 +150,29 @@ class GUI(object):
 					if event.type == self.Pygame.KEYDOWN:
 						key = False
 
+		while True:
+			for event in self.Pygame.event.get():
+				if event.type == self.Pygame.QUIT:
+					self.Pygame.quit()
+					# quit()
+					
+			if self.solver.issolved():
+
+				self.gameDisplay.fill(self.colors['white'])
+				self.drawBoxs()
+				self.fillValues()
+				self.button("SOLVED",650,285,150,50,self.colors['green'],self.colors['bright_green'], self.Dispaly)
+				self.Pygame.display.update()
+				self.clock.tick(7)
+			else:
+				self.gameDisplay.fill(self.colors['white'])
+				self.drawBoxs()
+				self.fillValues()
+				self.button("FAIL",650,285,150,50,self.colors['red'],self.colors['bright_red'], self.Dispaly)
+				self.Pygame.display.update()
+				self.clock.tick(7)
+
+
 	def quitgame(self):
 		self.Pygame.quit()
 		# quit()
@@ -154,30 +183,75 @@ class SudokuSolver(object):
 		super(SudokuSolver, self).__init__()
 		self.PuzzleOBJ = PuzzleOBJ
 		self.getIntState()
+		self.getCurrState()
 
 	def getIntState(self):
-		self.state = []
-		for i in range(9):
-			p_row = []
-			for j in range(9):
-				possible = []
-				if self.PuzzleOBJ[i][j] == 0:
-					possible = self.checkForPossible(i, j, True)
-				p_row += [possible]
-			self.state += [p_row]
-		print(self.state)
+		# for each cell[9x9x[possible]], possible values
+		self.state_POS = [[list(range(1,10)) for i in range(9)] for j in range(9)]
+		# for each row[9x[possible]], possible values
+		self.state_ROW = [list(range(1,10)) for i in range(9)]
+		# for each col[9x[possible]], possible values
+		self.state_COL = [list(range(1,10)) for i in range(9)]
+		# for each box[9x[possible]], possible values
+		self.state_BOX = [list(range(1,10)) for i in range(9)]
 
 	def getCurrState(self):
 		for i in range(9):
 			for j in range(9):
-				if self.PuzzleOBJ[i][j] == 0:
-					possible = self.checkForPossible(i,j, False)
+				val = self.PuzzleOBJ[i][j]
 
-	def checkForPossible(self, i, j, first_time = False):
-		if first_time :
-			possible = list(range(1,10))
-		else:
-			possible = self.state[i][j]
+				if val == 0:
+					self.checkForPossible(i,j)
+					continue
+				else:
+					self.state_POS[i][j] = []
+
+				if val in self.state_ROW[i]:
+					self.state_ROW[i].remove(val)
+				if val in self.state_COL[j]:
+					self.state_COL[j].remove(val)
+
+				ind = (i//3)*3+(j//3)
+
+				if val in self.state_BOX[ind]:
+					self.state_BOX[ind].remove(val)
+
+
+
+		# print('state_POS',self.state_POS)
+		# print('state_ROW',self.state_ROW)
+		# print('state_COL',self.state_COL)
+		# print('state_BOX',self.state_BOX)
+
+	def issolved(self):
+		matr = [list(range(1,10)) for i in range(9)]
+		matc = [list(range(1,10)) for i in range(9)]
+		matb = [list(range(1,10)) for i in range(9)]
+		for i in range(9):
+			for j in range(9):
+				val = self.PuzzleOBJ[i][j]
+
+				ind = (i//3)*3+(j//3)
+
+				if  matr[i][val-1] == val:
+					matr[i][val-1] =  0
+				else:
+					return False
+				if  matc[j][val-1] == val:
+					matc[j][val-1] =  0
+				else:
+					return False
+
+				if  matb[ind][val-1] == val:
+					matb[ind][val-1] =  0
+				else:
+					return False
+
+
+		return True
+
+	def checkForPossible(self, i, j):
+		possible = self.state_POS[i][j]
 
 		for y in range(9):
 			val = self.PuzzleOBJ[y][j]
@@ -197,23 +271,100 @@ class SudokuSolver(object):
 				if val != 0 and val in possible:
 					possible.remove(val)
 
-		return possible
+		return
 
 
 	def ApplyAlgo1(self):
 		for i in range(9):
 			for j in range(9):
-				if len(self.state[i][j]) == 1:
-					self.PuzzleOBJ[i][j] = self.state[i][j][0]
-					self.state[i][j] = []
+				if len(self.state_POS[i][j]) == 1:
+					self.PuzzleOBJ[i][j] = self.state_POS[i][j][0]
+					self.state_POS[i][j] = []
 					return True
+
+		return False
+
+	def ApplyAlgo2(self):
+
+		# row_num
+		for i in range(9):
+			temp_dict = {}
+			temp_dict2 = {}
+			for j in range(9):
+				for n in self.state_POS[i][j]:
+					temp_dict[n]  = temp_dict.get(n,0)+1
+					temp_dict2[n] = (i, j)
+
+			for n in temp_dict:
+				if temp_dict[n] == 1:
+					r,c = temp_dict2[n]
+					self.PuzzleOBJ[r][c] = n
+					self.state_POS[r][c] = []
+					print('row')
+					return True
+		# col_num
+		for j in range(9):
+			temp_dict = {}
+			temp_dict2 = {}
+			for i in range(9):
+				for n in self.state_POS[i][j]:
+					temp_dict[n]  = temp_dict.get(n,0)+1
+					temp_dict2[n] = (i, j)
+
+			for n in temp_dict:
+				if temp_dict[n] == 1:
+					r,c = temp_dict2[n]
+					self.PuzzleOBJ[r][c] = n
+					self.state_POS[r][c] = []
+					print('col')
+					return True
+
+		for box in range(9):
+			temp_dict = {}
+			temp_dict2 = {}
+
+			ibase = (box//3)*3
+			jbase = (box%3)*3
+
+			for i in range(3):
+				for j in range(3):
+
+					for n in self.state_POS[i+ibase][j+jbase]:
+						temp_dict[n]  = temp_dict.get(n,0)+1
+						temp_dict2[n] = (i+ibase, j+jbase)
+
+			for n in temp_dict:
+				if temp_dict[n] == 1:
+					r,c = temp_dict2[n]
+					self.PuzzleOBJ[r][c] = n
+					self.state_POS[r][c] = []
+					print('Box')
+					return True
+
+
+
+
+
+		# for BOX in range(9):
+
+		# 	ibase = BOX//3
+		# 	jbase = BOX%3
+		# 	for i in range(3):
+		# 		for j in range(3):
+		# 			pass
+
 
 		return False
 
 	def Solve(self):
 		updated = self.ApplyAlgo1()
+
+		if not updated:
+			updated = self.ApplyAlgo2()
 		if updated :
 			self.getCurrState()
+			return False
+		# print(self.state_POS)
 		return True
 
 if __name__ == '__main__':
