@@ -6,9 +6,16 @@ from random import randint
 
 def MAKEME(lis):
 	s = ''
-	for i in lis:
-		s+=str(i)
-	return s
+	l=[]
+	for i in range(1,10):
+		if i in lis:
+			s+=str(i)+ ' '
+		else:
+			s+='  '
+		if i%3==0:
+			l+=[s]
+			s=''
+	return l
 
 def getPuzzle(name):
 	PuzzleOBJ = []
@@ -115,13 +122,15 @@ class GUI(object):
 			for j in range(9):
 				if self.solver.PuzzleOBJ[j][i] == 0:
 					val = MAKEME(self.solver.state_POS[j][i])
-					x = sx + (i*50)
-					y = sy + (j*50)
+					for v in range(3):
 
-					smallText = self.Pygame.font.SysFont("comicsansms",20)
-					textSurf, textRect = self.text_objects(val, smallText,'green')
-					textRect.center = ( (x+(w/2)), (y+(h/2)) )
-					self.gameDisplay.blit(textSurf, textRect)
+						x = sx + (i*50)
+						y = sy + (j*50)
+
+						smallText = self.Pygame.font.SysFont("comicsansms",20)
+						textSurf, textRect = self.text_objects(val[v], smallText,'green')
+						textRect.center = ( (x+(w/2)), (y+((h/6)*(v+1)*1.5)) )
+						self.gameDisplay.blit(textSurf, textRect)
 				else:
 					val = str(self.solver.PuzzleOBJ[j][i])
 					x = sx + (i*50)
@@ -189,11 +198,11 @@ class SudokuSolver(object):
 		# for each cell[9x9x[possible]], possible values
 		self.state_POS = [[list(range(1,10)) for i in range(9)] for j in range(9)]
 		# for each row[9x[possible]], possible values
-		self.state_ROW = [list(range(1,10)) for i in range(9)]
+		# self.state_ROW = [list(range(1,10)) for i in range(9)]
 		# for each col[9x[possible]], possible values
-		self.state_COL = [list(range(1,10)) for i in range(9)]
+		# self.state_COL = [list(range(1,10)) for i in range(9)]
 		# for each box[9x[possible]], possible values
-		self.state_BOX = [list(range(1,10)) for i in range(9)]
+		# self.state_BOX = [list(range(1,10)) for i in range(9)]
 
 	def getCurrState(self):
 		for i in range(9):
@@ -206,15 +215,15 @@ class SudokuSolver(object):
 				else:
 					self.state_POS[i][j] = []
 
-				if val in self.state_ROW[i]:
-					self.state_ROW[i].remove(val)
-				if val in self.state_COL[j]:
-					self.state_COL[j].remove(val)
+				# if val in self.state_ROW[i]:
+				# 	self.state_ROW[i].remove(val)
+				# if val in self.state_COL[j]:
+				# 	self.state_COL[j].remove(val)
 
-				ind = (i//3)*3+(j//3)
+				# ind = (i//3)*3+(j//3)
 
-				if val in self.state_BOX[ind]:
-					self.state_BOX[ind].remove(val)
+				# if val in self.state_BOX[ind]:
+				# 	self.state_BOX[ind].remove(val)
 
 
 
@@ -300,7 +309,7 @@ class SudokuSolver(object):
 					r,c = temp_dict2[n]
 					self.PuzzleOBJ[r][c] = n
 					self.state_POS[r][c] = []
-					print('row')
+					# print('row')
 					return True
 		# col_num
 		for j in range(9):
@@ -316,7 +325,7 @@ class SudokuSolver(object):
 					r,c = temp_dict2[n]
 					self.PuzzleOBJ[r][c] = n
 					self.state_POS[r][c] = []
-					print('col')
+					# print('col')
 					return True
 
 		for box in range(9):
@@ -338,29 +347,125 @@ class SudokuSolver(object):
 					r,c = temp_dict2[n]
 					self.PuzzleOBJ[r][c] = n
 					self.state_POS[r][c] = []
-					print('Box')
+					# print('Box')
 					return True
 
-
-
-
-
-		# for BOX in range(9):
-
-		# 	ibase = BOX//3
-		# 	jbase = BOX%3
-		# 	for i in range(3):
-		# 		for j in range(3):
-		# 			pass
-
-
 		return False
+
+	def ApplyAlgo3(self):
+		# row_num
+		print('entry')
+		STATE = False
+		for i in range(9):
+			temp_dict = {}
+			temp_dict2 = {}
+			for j in range(9):
+				for n in self.state_POS[i][j]:
+					if (j//3) not in temp_dict.get(n,[]):
+						temp_dict[n]  = temp_dict.get(n,[]) + [j//3]
+					temp_dict2[n] = (i, j)
+
+			for n in temp_dict:
+				if len(temp_dict[n]) == 1:
+					i,j = temp_dict2[n]
+					ibase = (i//3)*3
+					jbase = (j//3)*3
+
+					for r in range(3):
+						for c in range(3):
+							if ibase+r == i:
+								continue
+							if n in self.state_POS[ibase+r][jbase+c]:
+								self.state_POS[ibase+r][jbase+c].remove(n)
+								STATE = True
+								print('removed0',ibase+r,jbase+c, n)
+
+
+		# col_num
+		for j in range(9):
+			temp_dict = {}
+			temp_dict2 = {}
+			for i in range(9):
+				for n in self.state_POS[i][j]:
+					if (i//3) not in temp_dict.get(n,[]):
+						temp_dict[n]  = temp_dict.get(n,[]) + [i//3]
+					temp_dict2[n] = (i, j)
+
+			for n in temp_dict:
+				if len(temp_dict[n]) == 1:
+					i,j = temp_dict2[n]
+					ibase = (i//3)*3
+					jbase = (j//3)*3
+
+					for r in range(3):
+						for c in range(3):
+							if jbase+c == j:
+								continue
+							if n in self.state_POS[ibase+r][jbase+c]:
+								self.state_POS[ibase+r][jbase+c].remove(n)
+								STATE = True
+								print('removed2',ibase+r,jbase+c, n)
+
+		# box_num
+		for box in range(9):
+			temp_dict_r  = {}
+			temp_dict_c  = {}
+			temp_dict_r2 = {}
+			temp_dict_c2 = {}
+
+			ibase = (box//3)*3
+			jbase = (box%3 )*3
+
+			for i in range(3):
+				for j in range(3):
+					for n in self.state_POS[i+ibase][j+jbase]:
+						if (i) not in temp_dict_r.get(n,[]):
+							temp_dict_r[n]  = temp_dict_r.get(n,[]) + [i]
+							temp_dict_r2[n] = (i+ibase, j+jbase)
+
+						if (j) not in temp_dict_c.get(n,[]):
+							temp_dict_c[n]  = temp_dict_c.get(n,[]) + [j]
+							temp_dict_c2[n] = (i+ibase, j+jbase)
+							
+
+			for n in temp_dict_r :
+				if len(temp_dict_r[n]) == 1:
+
+					r,c = temp_dict_r2[n]
+
+					for col in range(9):
+						if c//3 == col//3:
+							continue
+						if n in self.state_POS[r][col] :
+							self.state_POS[r][col].remove(n)
+							STATE = True
+							print('removed3',r,c,col,n)
+
+			for n in temp_dict_c :
+				if len(temp_dict_c[n]) == 1:
+
+					r,c = temp_dict_c2[n]
+
+					for row in range(9):
+						if r//3 == row//3:
+							continue
+						if n in self.state_POS[row][c] :
+							self.state_POS[row][c].remove(n)
+							STATE = True
+							print('removed4',r,c,row,n)
+				
+		return STATE
 
 	def Solve(self):
 		updated = self.ApplyAlgo1()
 
 		if not updated:
 			updated = self.ApplyAlgo2()
+
+		if not updated:
+			updated = self.ApplyAlgo3()
+
+
 		if updated :
 			self.getCurrState()
 			return False
