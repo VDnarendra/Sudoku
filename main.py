@@ -197,12 +197,6 @@ class SudokuSolver(object):
 	def getIntState(self):
 		# for each cell[9x9x[possible]], possible values
 		self.state_POS = [[list(range(1,10)) for i in range(9)] for j in range(9)]
-		# for each row[9x[possible]], possible values
-		# self.state_ROW = [list(range(1,10)) for i in range(9)]
-		# for each col[9x[possible]], possible values
-		# self.state_COL = [list(range(1,10)) for i in range(9)]
-		# for each box[9x[possible]], possible values
-		# self.state_BOX = [list(range(1,10)) for i in range(9)]
 
 	def getCurrState(self):
 		for i in range(9):
@@ -215,22 +209,6 @@ class SudokuSolver(object):
 				else:
 					self.state_POS[i][j] = []
 
-				# if val in self.state_ROW[i]:
-				# 	self.state_ROW[i].remove(val)
-				# if val in self.state_COL[j]:
-				# 	self.state_COL[j].remove(val)
-
-				# ind = (i//3)*3+(j//3)
-
-				# if val in self.state_BOX[ind]:
-				# 	self.state_BOX[ind].remove(val)
-
-
-
-		# print('state_POS',self.state_POS)
-		# print('state_ROW',self.state_ROW)
-		# print('state_COL',self.state_COL)
-		# print('state_BOX',self.state_BOX)
 
 	def issolved(self):
 		matr = [list(range(1,10)) for i in range(9)]
@@ -354,12 +332,13 @@ class SudokuSolver(object):
 
 	def ApplyAlgo3(self):
 		# row_num
-		print('entry')
 		STATE = False
 		for i in range(9):
 			temp_dict = {}
 			temp_dict2 = {}
+			# for each col
 			for j in range(9):
+				# for each possible value in cell
 				for n in self.state_POS[i][j]:
 					if (j//3) not in temp_dict.get(n,[]):
 						temp_dict[n]  = temp_dict.get(n,[]) + [j//3]
@@ -378,7 +357,7 @@ class SudokuSolver(object):
 							if n in self.state_POS[ibase+r][jbase+c]:
 								self.state_POS[ibase+r][jbase+c].remove(n)
 								STATE = True
-								print('removed0',ibase+r,jbase+c, n)
+								# print('removed0',ibase+r,jbase+c, n)
 
 
 		# col_num
@@ -404,7 +383,7 @@ class SudokuSolver(object):
 							if n in self.state_POS[ibase+r][jbase+c]:
 								self.state_POS[ibase+r][jbase+c].remove(n)
 								STATE = True
-								print('removed2',ibase+r,jbase+c, n)
+								# print('removed2',ibase+r,jbase+c, n)
 
 		# box_num
 		for box in range(9):
@@ -439,7 +418,7 @@ class SudokuSolver(object):
 						if n in self.state_POS[r][col] :
 							self.state_POS[r][col].remove(n)
 							STATE = True
-							print('removed3',r,c,col,n)
+							# print('removed3',r,c,col,n)
 
 			for n in temp_dict_c :
 				if len(temp_dict_c[n]) == 1:
@@ -452,9 +431,86 @@ class SudokuSolver(object):
 						if n in self.state_POS[row][c] :
 							self.state_POS[row][c].remove(n)
 							STATE = True
-							print('removed4',r,c,row,n)
+							# print('removed4',r,c,row,n)
 				
 		return STATE
+
+	def ApplyAlgo4(self):
+		
+		ret = False
+		# for row_num
+		for i in range(9):
+			# for col_num
+			for j in range(9):
+				if len(self.state_POS[i][j])==2:
+					for k in range(j+1,9):
+						if self.state_POS[i][j] == self.state_POS[i][k]:
+							val1=self.state_POS[i][j][0]
+							val2=self.state_POS[i][j][1]
+							for l in range(0,9):
+								if l==j or l==k:
+									continue
+								if val1 in self.state_POS[i][l]:
+									self.state_POS[i][l].remove(val1)
+									print('removed4',i,j,val1)
+									ret = True
+								if val2 in self.state_POS[i][l]:
+									self.state_POS[i][l].remove(val2)
+									print('removed5',i,j,val2)
+									ret = True
+		# for col_num
+		for j in range(9):
+			# for row_num
+			for i in range(9):
+				if len(self.state_POS[i][j])==2:
+					for k in range(i+1,9):
+						if self.state_POS[i][j] == self.state_POS[k][j]:
+							val1=self.state_POS[i][j][0]
+							val2=self.state_POS[i][j][1]
+							for l in range(0,9):
+								if l==i or l==k:
+									continue
+								if val1 in self.state_POS[l][j]:
+									self.state_POS[l][j].remove(val1)
+									print('removed6',i,j,val1)
+									ret = True
+								if val2 in self.state_POS[l][j]:
+									self.state_POS[l][j].remove(val2)
+									print('removed7',i,j,val2)
+									ret = True
+
+		for box in range(9):
+			ibase = (box//3)*3
+			jbase = (box%3)*3
+
+			for i_off in range(3):
+				for j_off in range(3):
+					i = i_off+ibase
+					j = j_off+jbase
+
+					b = (i*3)+(j)
+					if len(self.state_POS[i][j])==2:
+						for k in range(b+1 ,9):
+							i_k = (k//3)+ibase
+							j_k = (k%3)+jbase
+							if self.state_POS[i][j] == self.state_POS[i_k][j_k]:
+								val1=self.state_POS[i][j][0]
+								val2=self.state_POS[i][j][1]
+								for l in range(0,9):
+									i_l = (l//3)+ibase
+									j_l = (l%3)+jbase
+									if (i_l,j_l)==(i,j) or (i_l,j_l)==(i_k,j_k):
+										continue
+									if val1 in self.state_POS[i_l][j_l]:
+										self.state_POS[i_l][j_l].remove(val1)
+										print('removed8',i,j,val1)
+										ret = True
+									if val2 in self.state_POS[i_l][j_l]:
+										self.state_POS[i_l][j_l].remove(val2)
+										print('removed9',i,j,val2)
+										ret = True
+		return ret
+
 
 	def Solve(self):
 		updated = self.ApplyAlgo1()
@@ -464,6 +520,9 @@ class SudokuSolver(object):
 
 		if not updated:
 			updated = self.ApplyAlgo3()
+
+		if not updated:
+			updated = self.ApplyAlgo4()
 
 
 		if updated :
